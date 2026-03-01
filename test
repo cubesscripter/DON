@@ -1,0 +1,1121 @@
+-- MS HUB - Premium Key System
+-- Modern Loading & Key Verification GUI
+
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local HttpService = game:GetService("HttpService")
+
+local player = Players.LocalPlayer
+local mouse = player:GetMouse()
+
+-- Valid Keys (Add your keys here)
+local ValidKeys = {
+    "MSHUB-PREMIUM-2024",
+    "MSHUB-FREE-KEY",
+    "MSHUB-VIP-ACCESS",
+    "MS-BETA-TEST",
+    "MSHUB-LIFETIME"
+}
+
+-- Destroy existing GUI
+if game.CoreGui:FindFirstChild("MSHub_KeySystem") then
+    game.CoreGui:FindFirstChild("MSHub_KeySystem"):Destroy()
+end
+
+-- Create ScreenGui
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "MSHub_KeySystem"
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.ResetOnSpawn = false
+ScreenGui.IgnoreGuiInset = true
+
+pcall(function()
+    ScreenGui.Parent = game.CoreGui
+end)
+
+-- ============================================
+-- BACKGROUND WITH ANIMATED PARTICLES
+-- ============================================
+
+local Background = Instance.new("Frame")
+Background.Name = "Background"
+Background.Size = UDim2.new(1, 0, 1, 0)
+Background.BackgroundColor3 = Color3.fromRGB(8, 8, 16)
+Background.BorderSizePixel = 0
+Background.Parent = ScreenGui
+
+-- Animated gradient background
+local BGGradient = Instance.new("UIGradient")
+BGGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(8, 8, 20)),
+    ColorSequenceKeypoint.new(0.3, Color3.fromRGB(15, 5, 30)),
+    ColorSequenceKeypoint.new(0.6, Color3.fromRGB(5, 10, 35)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 5, 25))
+})
+BGGradient.Rotation = 45
+BGGradient.Parent = Background
+
+-- Floating particles container
+local ParticlesContainer = Instance.new("Frame")
+ParticlesContainer.Name = "Particles"
+ParticlesContainer.Size = UDim2.new(1, 0, 1, 0)
+ParticlesContainer.BackgroundTransparency = 1
+ParticlesContainer.ClipsDescendants = true
+ParticlesContainer.Parent = Background
+
+-- Create floating particles
+local function CreateParticle()
+    local particle = Instance.new("Frame")
+    local size = math.random(2, 6)
+    particle.Size = UDim2.new(0, size, 0, size)
+    particle.Position = UDim2.new(math.random(0, 100)/100, 0, 1.1, 0)
+    particle.BackgroundColor3 = Color3.fromRGB(
+        math.random(100, 180),
+        math.random(50, 150),
+        math.random(200, 255)
+    )
+    particle.BackgroundTransparency = math.random(3, 7)/10
+    particle.BorderSizePixel = 0
+    particle.Parent = ParticlesContainer
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(1, 0)
+    corner.Parent = particle
+    
+    local duration = math.random(4, 10)
+    local targetX = particle.Position.X.Scale + (math.random(-20, 20)/100)
+    
+    local tween = TweenService:Create(particle, TweenInfo.new(duration, Enum.EasingStyle.Linear), {
+        Position = UDim2.new(targetX, 0, -0.1, 0),
+        BackgroundTransparency = 1
+    })
+    tween:Play()
+    tween.Completed:Connect(function()
+        particle:Destroy()
+    end)
+end
+
+-- Spawn particles continuously
+spawn(function()
+    while ScreenGui.Parent do
+        CreateParticle()
+        wait(0.3)
+    end
+end)
+
+-- Animated grid lines
+for i = 1, 20 do
+    local line = Instance.new("Frame")
+    line.Size = UDim2.new(0, 1, 1, 0)
+    line.Position = UDim2.new(i/20, 0, 0, 0)
+    line.BackgroundColor3 = Color3.fromRGB(100, 60, 255)
+    line.BackgroundTransparency = 0.95
+    line.BorderSizePixel = 0
+    line.Parent = Background
+end
+
+for i = 1, 15 do
+    local line = Instance.new("Frame")
+    line.Size = UDim2.new(1, 0, 0, 1)
+    line.Position = UDim2.new(0, 0, i/15, 0)
+    line.BackgroundColor3 = Color3.fromRGB(100, 60, 255)
+    line.BackgroundTransparency = 0.95
+    line.BorderSizePixel = 0
+    line.Parent = Background
+end
+
+-- ============================================
+-- LOADING SCREEN
+-- ============================================
+
+local LoadingFrame = Instance.new("Frame")
+LoadingFrame.Name = "LoadingFrame"
+LoadingFrame.Size = UDim2.new(1, 0, 1, 0)
+LoadingFrame.BackgroundTransparency = 1
+LoadingFrame.Parent = Background
+
+-- Center container
+local LoadingCenter = Instance.new("Frame")
+LoadingCenter.Name = "Center"
+LoadingCenter.Size = UDim2.new(0, 500, 0, 400)
+LoadingCenter.Position = UDim2.new(0.5, -250, 0.5, -200)
+LoadingCenter.BackgroundTransparency = 1
+LoadingCenter.Parent = LoadingFrame
+
+-- Glowing orb behind logo
+local GlowOrb = Instance.new("ImageLabel")
+GlowOrb.Name = "GlowOrb"
+GlowOrb.Size = UDim2.new(0, 200, 0, 200)
+GlowOrb.Position = UDim2.new(0.5, -100, 0, -20)
+GlowOrb.BackgroundTransparency = 1
+GlowOrb.Image = "rbxassetid://7669684060"
+GlowOrb.ImageColor3 = Color3.fromRGB(120, 60, 255)
+GlowOrb.ImageTransparency = 0.5
+GlowOrb.Parent = LoadingCenter
+
+-- Animate glow pulse
+spawn(function()
+    while GlowOrb.Parent do
+        TweenService:Create(GlowOrb, TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+            ImageTransparency = 0.3,
+            Size = UDim2.new(0, 220, 0, 220),
+            Position = UDim2.new(0.5, -110, 0, -30)
+        }):Play()
+        wait(2)
+        TweenService:Create(GlowOrb, TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+            ImageTransparency = 0.7,
+            Size = UDim2.new(0, 180, 0, 180),
+            Position = UDim2.new(0.5, -90, 0, -10)
+        }):Play()
+        wait(2)
+    end
+end)
+
+-- Spinning ring 1
+local Ring1 = Instance.new("ImageLabel")
+Ring1.Name = "Ring1"
+Ring1.Size = UDim2.new(0, 150, 0, 150)
+Ring1.Position = UDim2.new(0.5, -75, 0, 5)
+Ring1.BackgroundTransparency = 1
+Ring1.Image = "rbxassetid://7669684060"
+Ring1.ImageColor3 = Color3.fromRGB(160, 100, 255)
+Ring1.ImageTransparency = 0.6
+Ring1.Parent = LoadingCenter
+
+-- Spinning ring 2
+local Ring2 = Instance.new("ImageLabel")
+Ring2.Name = "Ring2"
+Ring2.Size = UDim2.new(0, 130, 0, 130)
+Ring2.Position = UDim2.new(0.5, -65, 0, 15)
+Ring2.BackgroundTransparency = 1
+Ring2.Image = "rbxassetid://7669684060"
+Ring2.ImageColor3 = Color3.fromRGB(80, 150, 255)
+Ring2.ImageTransparency = 0.7
+Ring2.Parent = LoadingCenter
+
+-- MS HUB Title
+local TitleLabel = Instance.new("TextLabel")
+TitleLabel.Name = "Title"
+TitleLabel.Size = UDim2.new(1, 0, 0, 60)
+TitleLabel.Position = UDim2.new(0, 0, 0, 160)
+TitleLabel.BackgroundTransparency = 1
+TitleLabel.Text = "MS HUB"
+TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+TitleLabel.TextSize = 52
+TitleLabel.Font = Enum.Font.GothamBold
+TitleLabel.TextTransparency = 1
+TitleLabel.Parent = LoadingCenter
+
+local TitleGradient = Instance.new("UIGradient")
+TitleGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(160, 120, 255)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(100, 180, 255)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(180, 100, 255))
+})
+TitleGradient.Parent = TitleLabel
+
+-- Subtitle
+local SubTitle = Instance.new("TextLabel")
+SubTitle.Name = "SubTitle"
+SubTitle.Size = UDim2.new(1, 0, 0, 25)
+SubTitle.Position = UDim2.new(0, 0, 0, 220)
+SubTitle.BackgroundTransparency = 1
+SubTitle.Text = "P R E M I U M   S Y S T E M"
+SubTitle.TextColor3 = Color3.fromRGB(150, 130, 200)
+SubTitle.TextSize = 14
+SubTitle.Font = Enum.Font.Gotham
+SubTitle.TextTransparency = 1
+SubTitle.Parent = LoadingCenter
+
+-- Loading bar container
+local LoadBarContainer = Instance.new("Frame")
+LoadBarContainer.Name = "LoadBarContainer"
+LoadBarContainer.Size = UDim2.new(0, 350, 0, 4)
+LoadBarContainer.Position = UDim2.new(0.5, -175, 0, 270)
+LoadBarContainer.BackgroundColor3 = Color3.fromRGB(30, 25, 50)
+LoadBarContainer.BorderSizePixel = 0
+LoadBarContainer.BackgroundTransparency = 1
+LoadBarContainer.Parent = LoadingCenter
+
+local LoadBarCorner = Instance.new("UICorner")
+LoadBarCorner.CornerRadius = UDim.new(1, 0)
+LoadBarCorner.Parent = LoadBarContainer
+
+-- Loading bar fill
+local LoadBarFill = Instance.new("Frame")
+LoadBarFill.Name = "Fill"
+LoadBarFill.Size = UDim2.new(0, 0, 1, 0)
+LoadBarFill.BackgroundColor3 = Color3.fromRGB(140, 90, 255)
+LoadBarFill.BorderSizePixel = 0
+LoadBarFill.Parent = LoadBarContainer
+
+local FillCorner = Instance.new("UICorner")
+FillCorner.CornerRadius = UDim.new(1, 0)
+FillCorner.Parent = LoadBarFill
+
+local FillGradient = Instance.new("UIGradient")
+FillGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(100, 60, 255)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(160, 100, 255)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(80, 180, 255))
+})
+FillGradient.Parent = LoadBarFill
+
+-- Loading percentage text
+local LoadPercent = Instance.new("TextLabel")
+LoadPercent.Name = "Percent"
+LoadPercent.Size = UDim2.new(1, 0, 0, 20)
+LoadPercent.Position = UDim2.new(0, 0, 0, 280)
+LoadPercent.BackgroundTransparency = 1
+LoadPercent.Text = "0%"
+LoadPercent.TextColor3 = Color3.fromRGB(130, 110, 200)
+LoadPercent.TextSize = 13
+LoadPercent.Font = Enum.Font.GothamMedium
+LoadPercent.TextTransparency = 1
+LoadPercent.Parent = LoadingCenter
+
+-- Loading status text
+local StatusText = Instance.new("TextLabel")
+StatusText.Name = "Status"
+StatusText.Size = UDim2.new(1, 0, 0, 20)
+StatusText.Position = UDim2.new(0, 0, 0, 300)
+StatusText.BackgroundTransparency = 1
+StatusText.Text = "Initializing..."
+StatusText.TextColor3 = Color3.fromRGB(100, 90, 160)
+StatusText.TextSize = 11
+StatusText.Font = Enum.Font.Gotham
+StatusText.TextTransparency = 1
+StatusText.Parent = LoadingCenter
+
+-- Version text
+local VersionText = Instance.new("TextLabel")
+VersionText.Size = UDim2.new(0, 200, 0, 20)
+VersionText.Position = UDim2.new(1, -210, 1, -30)
+VersionText.BackgroundTransparency = 1
+VersionText.Text = "v2.5.0 | Premium Edition"
+VersionText.TextColor3 = Color3.fromRGB(70, 60, 120)
+VersionText.TextSize = 11
+VersionText.Font = Enum.Font.Gotham
+VersionText.TextXAlignment = Enum.TextXAlignment.Right
+VersionText.TextTransparency = 1
+VersionText.Parent = LoadingFrame
+
+-- ============================================
+-- KEY SYSTEM FRAME
+-- ============================================
+
+local KeyFrame = Instance.new("Frame")
+KeyFrame.Name = "KeyFrame"
+KeyFrame.Size = UDim2.new(0, 480, 0, 340)
+KeyFrame.Position = UDim2.new(0.5, -240, 0.5, -170)
+KeyFrame.BackgroundColor3 = Color3.fromRGB(16, 14, 28)
+KeyFrame.BorderSizePixel = 0
+KeyFrame.BackgroundTransparency = 1
+KeyFrame.Visible = false
+KeyFrame.Parent = Background
+
+local KeyCorner = Instance.new("UICorner")
+KeyCorner.CornerRadius = UDim.new(0, 16)
+KeyCorner.Parent = KeyFrame
+
+-- Key frame stroke
+local KeyStroke = Instance.new("UIStroke")
+KeyStroke.Color = Color3.fromRGB(100, 60, 255)
+KeyStroke.Thickness = 1.5
+KeyStroke.Transparency = 0.5
+KeyStroke.Parent = KeyFrame
+
+-- Inner glow effect
+local InnerGlow = Instance.new("Frame")
+InnerGlow.Size = UDim2.new(1, -4, 1, -4)
+InnerGlow.Position = UDim2.new(0, 2, 0, 2)
+InnerGlow.BackgroundColor3 = Color3.fromRGB(20, 16, 35)
+InnerGlow.BorderSizePixel = 0
+InnerGlow.Parent = KeyFrame
+
+local InnerGlowCorner = Instance.new("UICorner")
+InnerGlowCorner.CornerRadius = UDim.new(0, 14)
+InnerGlowCorner.Parent = InnerGlow
+
+local InnerGradient = Instance.new("UIGradient")
+InnerGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(22, 18, 40)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(14, 12, 28))
+})
+InnerGradient.Rotation = 180
+InnerGradient.Parent = InnerGlow
+
+-- Top accent line
+local AccentLine = Instance.new("Frame")
+AccentLine.Size = UDim2.new(0.6, 0, 0, 3)
+AccentLine.Position = UDim2.new(0.2, 0, 0, 0)
+AccentLine.BackgroundColor3 = Color3.fromRGB(130, 80, 255)
+AccentLine.BorderSizePixel = 0
+AccentLine.ZIndex = 5
+AccentLine.Parent = KeyFrame
+
+local AccentCorner = Instance.new("UICorner")
+AccentCorner.CornerRadius = UDim.new(1, 0)
+AccentCorner.Parent = AccentLine
+
+local AccentGrad = Instance.new("UIGradient")
+AccentGrad.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(80, 40, 200)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(160, 100, 255)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(80, 40, 200))
+})
+AccentGrad.Transparency = NumberSequence.new({
+    NumberSequenceKeypoint.new(0, 0.8),
+    NumberSequenceKeypoint.new(0.5, 0),
+    NumberSequenceKeypoint.new(1, 0.8)
+})
+AccentGrad.Parent = AccentLine
+
+-- Lock icon area
+local LockIcon = Instance.new("TextLabel")
+LockIcon.Size = UDim2.new(0, 50, 0, 50)
+LockIcon.Position = UDim2.new(0.5, -25, 0, 30)
+LockIcon.BackgroundTransparency = 1
+LockIcon.Text = "🔐"
+LockIcon.TextSize = 36
+LockIcon.ZIndex = 5
+LockIcon.Parent = KeyFrame
+
+-- Key system title
+local KeyTitle = Instance.new("TextLabel")
+KeyTitle.Name = "KeyTitle"
+KeyTitle.Size = UDim2.new(1, 0, 0, 35)
+KeyTitle.Position = UDim2.new(0, 0, 0, 80)
+KeyTitle.BackgroundTransparency = 1
+KeyTitle.Text = "MS HUB"
+KeyTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+KeyTitle.TextSize = 28
+KeyTitle.Font = Enum.Font.GothamBold
+KeyTitle.ZIndex = 5
+KeyTitle.Parent = KeyFrame
+
+local KeyTitleGrad = Instance.new("UIGradient")
+KeyTitleGrad.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(160, 120, 255)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(100, 180, 255))
+})
+KeyTitleGrad.Parent = KeyTitle
+
+-- Key subtitle
+local KeySubtitle = Instance.new("TextLabel")
+KeySubtitle.Name = "KeySubtitle"
+KeySubtitle.Size = UDim2.new(1, 0, 0, 20)
+KeySubtitle.Position = UDim2.new(0, 0, 0, 112)
+KeySubtitle.BackgroundTransparency = 1
+KeySubtitle.Text = "Enter your premium key to continue"
+KeySubtitle.TextColor3 = Color3.fromRGB(100, 90, 150)
+KeySubtitle.TextSize = 13
+KeySubtitle.Font = Enum.Font.Gotham
+KeySubtitle.ZIndex = 5
+KeySubtitle.Parent = KeyFrame
+
+-- Key input container
+local InputContainer = Instance.new("Frame")
+InputContainer.Size = UDim2.new(0, 380, 0, 48)
+InputContainer.Position = UDim2.new(0.5, -190, 0, 150)
+InputContainer.BackgroundColor3 = Color3.fromRGB(12, 10, 24)
+InputContainer.BorderSizePixel = 0
+InputContainer.ZIndex = 5
+InputContainer.Parent = KeyFrame
+
+local InputCorner = Instance.new("UICorner")
+InputCorner.CornerRadius = UDim.new(0, 10)
+InputCorner.Parent = InputContainer
+
+local InputStroke = Instance.new("UIStroke")
+InputStroke.Color = Color3.fromRGB(60, 40, 120)
+InputStroke.Thickness = 1.5
+InputStroke.Transparency = 0.3
+InputStroke.Parent = InputContainer
+
+-- Text input
+local KeyInput = Instance.new("TextBox")
+KeyInput.Name = "KeyInput"
+KeyInput.Size = UDim2.new(1, -24, 1, 0)
+KeyInput.Position = UDim2.new(0, 12, 0, 0)
+KeyInput.BackgroundTransparency = 1
+KeyInput.Text = ""
+KeyInput.PlaceholderText = "Enter your key here..."
+KeyInput.PlaceholderColor3 = Color3.fromRGB(70, 60, 110)
+KeyInput.TextColor3 = Color3.fromRGB(200, 190, 255)
+KeyInput.TextSize = 14
+KeyInput.Font = Enum.Font.GothamMedium
+KeyInput.ZIndex = 6
+KeyInput.ClearTextOnFocus = false
+KeyInput.Parent = InputContainer
+
+-- Verify button
+local VerifyButton = Instance.new("Frame")
+VerifyButton.Name = "VerifyButton"
+VerifyButton.Size = UDim2.new(0, 380, 0, 48)
+VerifyButton.Position = UDim2.new(0.5, -190, 0, 215)
+VerifyButton.BackgroundColor3 = Color3.fromRGB(100, 60, 255)
+VerifyButton.BorderSizePixel = 0
+VerifyButton.ZIndex = 5
+VerifyButton.Parent = KeyFrame
+
+local VerifyCorner = Instance.new("UICorner")
+VerifyCorner.CornerRadius = UDim.new(0, 10)
+VerifyCorner.Parent = VerifyButton
+
+local VerifyGradient = Instance.new("UIGradient")
+VerifyGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(100, 50, 220)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(130, 80, 255)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(80, 120, 255))
+})
+VerifyGradient.Parent = VerifyButton
+
+local VerifyText = Instance.new("TextLabel")
+VerifyText.Size = UDim2.new(1, 0, 1, 0)
+VerifyText.BackgroundTransparency = 1
+VerifyText.Text = "✦  VERIFY KEY  ✦"
+VerifyText.TextColor3 = Color3.fromRGB(255, 255, 255)
+VerifyText.TextSize = 15
+VerifyText.Font = Enum.Font.GothamBold
+VerifyText.ZIndex = 6
+VerifyText.Parent = VerifyButton
+
+local VerifyBtn = Instance.new("TextButton")
+VerifyBtn.Size = UDim2.new(1, 0, 1, 0)
+VerifyBtn.BackgroundTransparency = 1
+VerifyBtn.Text = ""
+VerifyBtn.ZIndex = 7
+VerifyBtn.Parent = VerifyButton
+
+-- Get Key button
+local GetKeyButton = Instance.new("Frame")
+GetKeyButton.Name = "GetKeyButton"
+GetKeyButton.Size = UDim2.new(0, 185, 0, 40)
+GetKeyButton.Position = UDim2.new(0.5, -190, 0, 275)
+GetKeyButton.BackgroundColor3 = Color3.fromRGB(25, 22, 45)
+GetKeyButton.BorderSizePixel = 0
+GetKeyButton.ZIndex = 5
+GetKeyButton.Parent = KeyFrame
+
+local GetKeyCorner = Instance.new("UICorner")
+GetKeyCorner.CornerRadius = UDim.new(0, 10)
+GetKeyCorner.Parent = GetKeyButton
+
+local GetKeyStroke = Instance.new("UIStroke")
+GetKeyStroke.Color = Color3.fromRGB(80, 50, 160)
+GetKeyStroke.Thickness = 1
+GetKeyStroke.Transparency = 0.5
+GetKeyStroke.Parent = GetKeyButton
+
+local GetKeyText = Instance.new("TextLabel")
+GetKeyText.Size = UDim2.new(1, 0, 1, 0)
+GetKeyText.BackgroundTransparency = 1
+GetKeyText.Text = "🔑  Get Key"
+GetKeyText.TextColor3 = Color3.fromRGB(140, 120, 220)
+GetKeyText.TextSize = 13
+GetKeyText.Font = Enum.Font.GothamMedium
+GetKeyText.ZIndex = 6
+GetKeyText.Parent = GetKeyButton
+
+local GetKeyBtn = Instance.new("TextButton")
+GetKeyBtn.Size = UDim2.new(1, 0, 1, 0)
+GetKeyBtn.BackgroundTransparency = 1
+GetKeyBtn.Text = ""
+GetKeyBtn.ZIndex = 7
+GetKeyBtn.Parent = GetKeyButton
+
+-- Discord button
+local DiscordButton = Instance.new("Frame")
+DiscordButton.Name = "DiscordButton"
+DiscordButton.Size = UDim2.new(0, 185, 0, 40)
+DiscordButton.Position = UDim2.new(0.5, 5, 0, 275)
+DiscordButton.BackgroundColor3 = Color3.fromRGB(25, 22, 45)
+DiscordButton.BorderSizePixel = 0
+DiscordButton.ZIndex = 5
+DiscordButton.Parent = KeyFrame
+
+local DiscordCorner = Instance.new("UICorner")
+DiscordCorner.CornerRadius = UDim.new(0, 10)
+DiscordCorner.Parent = DiscordButton
+
+local DiscordStroke = Instance.new("UIStroke")
+DiscordStroke.Color = Color3.fromRGB(80, 50, 160)
+DiscordStroke.Thickness = 1
+DiscordStroke.Transparency = 0.5
+DiscordStroke.Parent = DiscordButton
+
+local DiscordText = Instance.new("TextLabel")
+DiscordText.Size = UDim2.new(1, 0, 1, 0)
+DiscordText.BackgroundTransparency = 1
+DiscordText.Text = "💬  Discord"
+DiscordText.TextColor3 = Color3.fromRGB(140, 120, 220)
+DiscordText.TextSize = 13
+DiscordText.Font = Enum.Font.GothamMedium
+DiscordText.ZIndex = 6
+DiscordText.Parent = DiscordButton
+
+local DiscordBtn = Instance.new("TextButton")
+DiscordBtn.Size = UDim2.new(1, 0, 1, 0)
+DiscordBtn.BackgroundTransparency = 1
+DiscordBtn.Text = ""
+DiscordBtn.ZIndex = 7
+DiscordBtn.Parent = DiscordButton
+
+-- Status message
+local KeyStatus = Instance.new("TextLabel")
+KeyStatus.Name = "KeyStatus"
+KeyStatus.Size = UDim2.new(1, 0, 0, 20)
+KeyStatus.Position = UDim2.new(0, 0, 1, -25)
+KeyStatus.BackgroundTransparency = 1
+KeyStatus.Text = ""
+KeyStatus.TextColor3 = Color3.fromRGB(255, 80, 80)
+KeyStatus.TextSize = 12
+KeyStatus.Font = Enum.Font.GothamMedium
+KeyStatus.ZIndex = 5
+KeyStatus.Parent = KeyFrame
+
+-- ============================================
+-- SUCCESS SCREEN
+-- ============================================
+
+local SuccessFrame = Instance.new("Frame")
+SuccessFrame.Name = "SuccessFrame"
+SuccessFrame.Size = UDim2.new(1, 0, 1, 0)
+SuccessFrame.BackgroundTransparency = 1
+SuccessFrame.Visible = false
+SuccessFrame.Parent = Background
+
+local SuccessIcon = Instance.new("TextLabel")
+SuccessIcon.Size = UDim2.new(0, 100, 0, 100)
+SuccessIcon.Position = UDim2.new(0.5, -50, 0.5, -100)
+SuccessIcon.BackgroundTransparency = 1
+SuccessIcon.Text = "✓"
+SuccessIcon.TextColor3 = Color3.fromRGB(80, 255, 120)
+SuccessIcon.TextSize = 72
+SuccessIcon.Font = Enum.Font.GothamBold
+SuccessIcon.TextTransparency = 1
+SuccessIcon.Parent = SuccessFrame
+
+local SuccessText = Instance.new("TextLabel")
+SuccessText.Size = UDim2.new(1, 0, 0, 40)
+SuccessText.Position = UDim2.new(0, 0, 0.5, 10)
+SuccessText.BackgroundTransparency = 1
+SuccessText.Text = "Welcome to MS HUB"
+SuccessText.TextColor3 = Color3.fromRGB(255, 255, 255)
+SuccessText.TextSize = 32
+SuccessText.Font = Enum.Font.GothamBold
+SuccessText.TextTransparency = 1
+SuccessText.Parent = SuccessFrame
+
+local SuccessGrad = Instance.new("UIGradient")
+SuccessGrad.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(80, 255, 120)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(80, 200, 255))
+})
+SuccessGrad.Parent = SuccessText
+
+local SuccessSub = Instance.new("TextLabel")
+SuccessSub.Size = UDim2.new(1, 0, 0, 25)
+SuccessSub.Position = UDim2.new(0, 0, 0.5, 50)
+SuccessSub.BackgroundTransparency = 1
+SuccessSub.Text = "Loading script environment..."
+SuccessSub.TextColor3 = Color3.fromRGB(100, 200, 140)
+SuccessSub.TextSize = 14
+SuccessSub.Font = Enum.Font.Gotham
+SuccessSub.TextTransparency = 1
+SuccessSub.Parent = SuccessFrame
+
+-- ============================================
+-- ANIMATIONS & LOGIC
+-- ============================================
+
+-- Gradient rotation animation
+spawn(function()
+    local rotation = 0
+    while ScreenGui.Parent do
+        rotation = rotation + 0.5
+        BGGradient.Rotation = rotation % 360
+        
+        -- Animate accent line gradient
+        AccentGrad.Offset = Vector2.new(math.sin(tick() * 2) * 0.3, 0)
+        
+        -- Animate key stroke color
+        local hue = (tick() * 20) % 360
+        local color = Color3.fromHSV(hue/360, 0.6, 0.8)
+        KeyStroke.Color = color
+        
+        RunService.Heartbeat:Wait()
+    end
+end)
+
+-- Ring rotation animation
+spawn(function()
+    local rot1 = 0
+    local rot2 = 0
+    while Ring1.Parent do
+        rot1 = rot1 + 1
+        rot2 = rot2 - 1.5
+        Ring1.Rotation = rot1
+        Ring2.Rotation = rot2
+        RunService.Heartbeat:Wait()
+    end
+end)
+
+-- Hover effects
+local function SetupHover(button, frame)
+    button.MouseEnter:Connect(function()
+        TweenService:Create(frame, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {
+            Size = frame.Size + UDim2.new(0, 4, 0, 4),
+            Position = frame.Position - UDim2.new(0, 2, 0, 2)
+        }):Play()
+    end)
+    button.MouseLeave:Connect(function()
+        TweenService:Create(frame, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {
+            Size = UDim2.new(0, 380, 0, 48),
+            Position = UDim2.new(0.5, -190, 0, 215)
+        }):Play()
+    end)
+end
+
+-- Verify button hover
+VerifyBtn.MouseEnter:Connect(function()
+    TweenService:Create(VerifyButton, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {
+        BackgroundColor3 = Color3.fromRGB(120, 80, 255)
+    }):Play()
+end)
+
+VerifyBtn.MouseLeave:Connect(function()
+    TweenService:Create(VerifyButton, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {
+        BackgroundColor3 = Color3.fromRGB(100, 60, 255)
+    }):Play()
+end)
+
+-- Small button hovers
+for _, btn in pairs({GetKeyBtn, DiscordBtn}) do
+    local frame = btn.Parent
+    btn.MouseEnter:Connect(function()
+        TweenService:Create(frame, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {
+            BackgroundColor3 = Color3.fromRGB(35, 30, 60)
+        }):Play()
+    end)
+    btn.MouseLeave:Connect(function()
+        TweenService:Create(frame, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {
+            BackgroundColor3 = Color3.fromRGB(25, 22, 45)
+        }):Play()
+    end)
+end
+
+-- Input focus effects
+KeyInput.Focused:Connect(function()
+    TweenService:Create(InputStroke, TweenInfo.new(0.3), {
+        Color = Color3.fromRGB(130, 90, 255),
+        Transparency = 0
+    }):Play()
+end)
+
+KeyInput.FocusLost:Connect(function()
+    TweenService:Create(InputStroke, TweenInfo.new(0.3), {
+        Color = Color3.fromRGB(60, 40, 120),
+        Transparency = 0.3
+    }):Play()
+end)
+
+-- ============================================
+-- INTRO LOADING ANIMATION
+-- ============================================
+
+local loadingStatuses = {
+    "Initializing MS HUB...",
+    "Loading modules...",
+    "Connecting to server...",
+    "Fetching configurations...",
+    "Validating environment...",
+    "Loading UI components...",
+    "Preparing key system...",
+    "Almost ready..."
+}
+
+-- Start loading animation
+spawn(function()
+    wait(0.5)
+    
+    -- Fade in title
+    TweenService:Create(TitleLabel, TweenInfo.new(1.2, Enum.EasingStyle.Quint), {
+        TextTransparency = 0
+    }):Play()
+    wait(0.3)
+    
+    TweenService:Create(SubTitle, TweenInfo.new(1, Enum.EasingStyle.Quint), {
+        TextTransparency = 0
+    }):Play()
+    wait(0.5)
+    
+    -- Show loading bar
+    TweenService:Create(LoadBarContainer, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {
+        BackgroundTransparency = 0
+    }):Play()
+    TweenService:Create(LoadPercent, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {
+        TextTransparency = 0
+    }):Play()
+    TweenService:Create(StatusText, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {
+        TextTransparency = 0
+    }):Play()
+    TweenService:Create(VersionText, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {
+        TextTransparency = 0
+    }):Play()
+    
+    -- Animate loading progress
+    for i = 1, 100 do
+        local statusIndex = math.ceil(i / (100 / #loadingStatuses))
+        statusIndex = math.clamp(statusIndex, 1, #loadingStatuses)
+        
+        StatusText.Text = loadingStatuses[statusIndex]
+        LoadPercent.Text = i .. "%"
+        
+        TweenService:Create(LoadBarFill, TweenInfo.new(0.05, Enum.EasingStyle.Linear), {
+            Size = UDim2.new(i/100, 0, 1, 0)
+        }):Play()
+        
+        -- Randomize wait for realistic feel
+        local waitTime = 0.02
+        if i == 25 or i == 50 or i == 75 then
+            waitTime = 0.3
+        elseif i % 10 == 0 then
+            waitTime = 0.1
+        end
+        wait(waitTime)
+    end
+    
+    StatusText.Text = "✓ Loading complete!"
+    StatusText.TextColor3 = Color3.fromRGB(80, 255, 120)
+    LoadBarFill.BackgroundColor3 = Color3.fromRGB(80, 255, 120)
+    
+    wait(0.8)
+    
+    -- Fade out loading screen
+    TweenService:Create(TitleLabel, TweenInfo.new(0.8, Enum.EasingStyle.Quint), {
+        TextTransparency = 1,
+        Position = UDim2.new(0, 0, 0, 140)
+    }):Play()
+    TweenService:Create(SubTitle, TweenInfo.new(0.8, Enum.EasingStyle.Quint), {
+        TextTransparency = 1
+    }):Play()
+    TweenService:Create(LoadBarContainer, TweenInfo.new(0.6, Enum.EasingStyle.Quint), {
+        BackgroundTransparency = 1
+    }):Play()
+    TweenService:Create(LoadBarFill, TweenInfo.new(0.6, Enum.EasingStyle.Quint), {
+        BackgroundTransparency = 1
+    }):Play()
+    TweenService:Create(LoadPercent, TweenInfo.new(0.6, Enum.EasingStyle.Quint), {
+        TextTransparency = 1
+    }):Play()
+    TweenService:Create(StatusText, TweenInfo.new(0.6, Enum.EasingStyle.Quint), {
+        TextTransparency = 1
+    }):Play()
+    TweenService:Create(VersionText, TweenInfo.new(0.6, Enum.EasingStyle.Quint), {
+        TextTransparency = 1
+    }):Play()
+    TweenService:Create(GlowOrb, TweenInfo.new(0.8, Enum.EasingStyle.Quint), {
+        ImageTransparency = 1
+    }):Play()
+    TweenService:Create(Ring1, TweenInfo.new(0.8, Enum.EasingStyle.Quint), {
+        ImageTransparency = 1
+    }):Play()
+    TweenService:Create(Ring2, TweenInfo.new(0.8, Enum.EasingStyle.Quint), {
+        ImageTransparency = 1
+    }):Play()
+    
+    wait(1)
+    
+    LoadingFrame.Visible = false
+    
+    -- Show key system
+    KeyFrame.Visible = true
+    KeyFrame.BackgroundTransparency = 1
+    KeyFrame.Size = UDim2.new(0, 480, 0, 340)
+    
+    -- Scale in animation
+    KeyFrame.Size = UDim2.new(0, 400, 0, 280)
+    KeyFrame.Position = UDim2.new(0.5, -200, 0.5, -140)
+    
+    TweenService:Create(KeyFrame, TweenInfo.new(0.8, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+        BackgroundTransparency = 0,
+        Size = UDim2.new(0, 480, 0, 340),
+        Position = UDim2.new(0.5, -240, 0.5, -170)
+    }):Play()
+    
+    wait(0.3)
+    
+    -- Fade in elements one by one
+    for _, child in pairs(KeyFrame:GetDescendants()) do
+        if child:IsA("TextLabel") or child:IsA("TextBox") then
+            if child.TextTransparency == 0 then
+                child.TextTransparency = 1
+                TweenService:Create(child, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {
+                    TextTransparency = 0
+                }):Play()
+            end
+        end
+    end
+end)
+
+-- ============================================
+-- KEY VERIFICATION
+-- ============================================
+
+local function ShakeFrame(frame)
+    local originalPos = frame.Position
+    for i = 1, 5 do
+        TweenService:Create(frame, TweenInfo.new(0.05), {
+            Position = originalPos + UDim2.new(0, math.random(-8, 8), 0, 0)
+        }):Play()
+        wait(0.05)
+    end
+    TweenService:Create(frame, TweenInfo.new(0.05), {
+        Position = originalPos
+    }):Play()
+end
+
+local function ShowSuccess()
+    -- Fade out key frame
+    TweenService:Create(KeyFrame, TweenInfo.new(0.6, Enum.EasingStyle.Quint), {
+        BackgroundTransparency = 1,
+        Size = UDim2.new(0, 520, 0, 370),
+        Position = UDim2.new(0.5, -260, 0.5, -185)
+    }):Play()
+    
+    for _, child in pairs(KeyFrame:GetDescendants()) do
+        if child:IsA("TextLabel") or child:IsA("TextBox") then
+            TweenService:Create(child, TweenInfo.new(0.4, Enum.EasingStyle.Quint), {
+                TextTransparency = 1
+            }):Play()
+        end
+        if child:IsA("Frame") then
+            TweenService:Create(child, TweenInfo.new(0.4, Enum.EasingStyle.Quint), {
+                BackgroundTransparency = 1
+            }):Play()
+        end
+        if child:IsA("UIStroke") then
+            TweenService:Create(child, TweenInfo.new(0.4, Enum.EasingStyle.Quint), {
+                Transparency = 1
+            }):Play()
+        end
+    end
+    
+    wait(0.8)
+    KeyFrame.Visible = false
+    SuccessFrame.Visible = true
+    
+    -- Animate success
+    TweenService:Create(SuccessIcon, TweenInfo.new(0.8, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+        TextTransparency = 0
+    }):Play()
+    
+    wait(0.3)
+    
+    TweenService:Create(SuccessText, TweenInfo.new(0.8, Enum.EasingStyle.Quint), {
+        TextTransparency = 0
+    }):Play()
+    
+    wait(0.2)
+    
+    TweenService:Create(SuccessSub, TweenInfo.new(0.8, Enum.EasingStyle.Quint), {
+        TextTransparency = 0
+    }):Play()
+    
+    -- Success particles burst
+    for i = 1, 30 do
+        local p = Instance.new("Frame")
+        local s = math.random(3, 8)
+        p.Size = UDim2.new(0, s, 0, s)
+        p.Position = UDim2.new(0.5, 0, 0.5, -50)
+        p.BackgroundColor3 = Color3.fromRGB(
+            math.random(60, 120),
+            math.random(200, 255),
+            math.random(100, 180)
+        )
+        p.BorderSizePixel = 0
+        p.Parent = SuccessFrame
+        
+        local pc = Instance.new("UICorner")
+        pc.CornerRadius = UDim.new(1, 0)
+        pc.Parent = p
+        
+        local angle = math.rad(math.random(0, 360))
+        local dist = math.random(100, 300)
+        
+        TweenService:Create(p, TweenInfo.new(math.random(8, 15)/10, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+            Position = UDim2.new(0.5, math.cos(angle) * dist, 0.5, -50 + math.sin(angle) * dist),
+            BackgroundTransparency = 1
+        }):Play()
+        
+        spawn(function()
+            wait(2)
+            p:Destroy()
+        end)
+    end
+    
+    wait(3)
+    
+    -- Fade out everything
+    for _, child in pairs(SuccessFrame:GetChildren()) do
+        if child:IsA("TextLabel") then
+            TweenService:Create(child, TweenInfo.new(1, Enum.EasingStyle.Quint), {
+                TextTransparency = 1
+            }):Play()
+        end
+    end
+    
+    TweenService:Create(Background, TweenInfo.new(1.5, Enum.EasingStyle.Quint), {
+        BackgroundTransparency = 1
+    }):Play()
+    
+    for _, child in pairs(Background:GetDescendants()) do
+        if child:IsA("Frame") then
+            TweenService:Create(child, TweenInfo.new(1.5, Enum.EasingStyle.Quint), {
+                BackgroundTransparency = 1
+            }):Play()
+        end
+        if child:IsA("ImageLabel") then
+            TweenService:Create(child, TweenInfo.new(1.5, Enum.EasingStyle.Quint), {
+                ImageTransparency = 1
+            }):Play()
+        end
+    end
+    
+    wait(2)
+    ScreenGui:Destroy()
+    
+    -- YOUR SCRIPT GOES HERE
+    print("MS HUB - Key verified! Loading main script...")
+    -- loadstring(game:HttpGet("YOUR_SCRIPT_URL"))()
+end
+
+local function VerifyKey()
+    local key = KeyInput.Text
+    
+    if key == "" then
+        KeyStatus.Text = "⚠ Please enter a key!"
+        KeyStatus.TextColor3 = Color3.fromRGB(255, 180, 50)
+        ShakeFrame(InputContainer)
+        return
+    end
+    
+    -- Loading animation on button
+    VerifyText.Text = "⟳  Verifying..."
+    TweenService:Create(VerifyButton, TweenInfo.new(0.3), {
+        BackgroundColor3 = Color3.fromRGB(80, 50, 180)
+    }):Play()
+    
+    wait(1.5)
+    
+    local isValid = false
+    for _, validKey in pairs(ValidKeys) do
+        if key == validKey then
+            isValid = true
+            break
+        end
+    end
+    
+    if isValid then
+        KeyStatus.Text = "✓ Key verified successfully!"
+        KeyStatus.TextColor3 = Color3.fromRGB(80, 255, 120)
+        
+        TweenService:Create(VerifyButton, TweenInfo.new(0.3), {
+            BackgroundColor3 = Color3.fromRGB(40, 180, 80)
+        }):Play()
+        VerifyText.Text = "✓  VERIFIED"
+        
+        TweenService:Create(InputStroke, TweenInfo.new(0.3), {
+            Color = Color3.fromRGB(80, 255, 120)
+        }):Play()
+        
+        wait(1)
+        ShowSuccess()
+    else
+        KeyStatus.Text = "✗ Invalid key! Please try again."
+        KeyStatus.TextColor3 = Color3.fromRGB(255, 70, 70)
+        
+        TweenService:Create(VerifyButton, TweenInfo.new(0.3), {
+            BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+        }):Play()
+        VerifyText.Text = "✗  INVALID KEY"
+        
+        TweenService:Create(InputStroke, TweenInfo.new(0.3), {
+            Color = Color3.fromRGB(255, 70, 70)
+        }):Play()
+        
+        ShakeFrame(KeyFrame)
+        
+        wait(1.5)
+        
+        TweenService:Create(VerifyButton, TweenInfo.new(0.3), {
+            BackgroundColor3 = Color3.fromRGB(100, 60, 255)
+        }):Play()
+        VerifyText.Text = "✦  VERIFY KEY  ✦"
+        
+        TweenService:Create(InputStroke, TweenInfo.new(0.3), {
+            Color = Color3.fromRGB(60, 40, 120)
+        }):Play()
+    end
+end
+
+-- Button connections
+VerifyBtn.MouseButton1Click:Connect(VerifyKey)
+
+KeyInput.FocusLost:Connect(function(enterPressed)
+    if enterPressed then
+        VerifyKey()
+    end
+end)
+
+GetKeyBtn.MouseButton1Click:Connect(function()
+    -- Replace with your key link
+    setclipboard("https://your-key-link.com")
+    KeyStatus.Text = "🔗 Key link copied to clipboard!"
+    KeyStatus.TextColor3 = Color3.fromRGB(100, 180, 255)
+    wait(2)
+    KeyStatus.Text = ""
+end)
+
+DiscordBtn.MouseButton1Click:Connect(function()
+    -- Replace with your discord link
+    setclipboard("https://discord.gg/your-server")
+    KeyStatus.Text = "💬 Discord link copied to clipboard!"
+    KeyStatus.TextColor3 = Color3.fromRGB(114, 137, 218)
+    wait(2)
+    KeyStatus.Text = ""
+end)
+
+-- Title gradient animation
+spawn(function()
+    while TitleLabel.Parent do
+        TweenService:Create(TitleGradient, TweenInfo.new(2, Enum.EasingStyle.Linear), {
+            Offset = Vector2.new(1, 0)
+        }):Play()
+        wait(2)
+        TweenService:Create(TitleGradient, TweenInfo.new(2, Enum.EasingStyle.Linear), {
+            Offset = Vector2.new(-1, 0)
+        }):Play()
+        wait(2)
+    end
+end)
+
+-- Key title gradient animation
+spawn(function()
+    while KeyTitle.Parent do
+        TweenService:Create(KeyTitleGrad, TweenInfo.new(2, Enum.EasingStyle.Linear), {
+            Offset = Vector2.new(1, 0)
+        }):Play()
+        wait(2)
+        TweenService:Create(KeyTitleGrad, TweenInfo.new(2, Enum.EasingStyle.Linear), {
+            Offset = Vector2.new(-1, 0)
+        }):Play()
+        wait(2)
+    end
+end)
+
+print("MS HUB Key System loaded successfully!")
